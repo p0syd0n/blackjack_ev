@@ -6,16 +6,19 @@ import matplotlib.pyplot as plt
 from time import sleep
 
 # 4/6/8 decks, hit soft 17
-TRACE = False
+TRACE= False
 DAS = False
-DECKS = 1
+DECKS = 8
 
+#graph profit for each round as a data point. Setting to False will 
+# graph profit from each hand as a data point.
+GRAPH_PER_ROUND = False 
 ESTIMATE_TO = 2
-ROUNDS = 2
+ROUNDS = 20
 DEBUG = False
 BANK_START = 1000
 bank = BANK_START
-SHOE = 100 #percent
+SHOE = 75 #percent
 MIN_BET = 10
 
 
@@ -114,13 +117,11 @@ class Main_Character(Player):
 
 
 class Game:
-    def __init__(self, shoe, min_bet, estimate_to, das, decks, current_trial_bank, data, count):
-        self.count = count
+    def __init__(self, shoe, min_bet, estimate_to, das, decks, current_trial_bank, data):
         self.data = data
         self.bank = current_trial_bank
         self.main_character = Main_Character(self)
         self.shoe = shoe
-        step(f"Shoe: {self.shoe}")
         self.min_bet = min_bet
         self.estimate_to = estimate_to
         self.das = das
@@ -132,11 +133,10 @@ class Game:
             prep_decks.append(new_deck)
 
         self.main_deck = Deck(prep_decks)
-       # self.main_deck.shuffle()
-        cards_to_cut =  int(len(self.main_deck.content) * (1- (self.shoe / 100)))
-        step(f"Cutting {cards_to_cut} cards from {len(self.main_deck.content)}")
-        self.main_deck.content = self.main_deck.content if cards_to_cut == 0 else self.main_deck.content[:-cards_to_cut]
-        step(f"DEcl is now {len(self.main_deck.content)}")
+        self.main_deck.shuffle()
+        cards_to_cut = int(len(self.main_deck.content) * (1-(self.shoe / 100)))
+
+        self.main_deck.content = self.main_deck.content[:-cards_to_cut]
         self.dealer = Dealer(self)
         self.running_count = 0
         self.true_count = 0
@@ -167,8 +167,7 @@ class Game:
         return (total, soft)
     
     def make_bet(self):
-        if not self.count:
-            return random.randint(self.min_bet,int(bank))
+        #return random.randint(10,int(bank))
 
         self.update_true_count_and_edge()
         #edges.append(self.edge)
@@ -195,7 +194,7 @@ class Game:
 
     def gameloop(self):
         print("Starting a new game where the bank is "+str(self.bank))
-        step(f"Started new gameloop (new game) with a deck of {len(self.main_deck.content)} cards")
+        step("Started new gameloop (new game)")
         
         while len(self.main_deck.content) > 15:  # buffer to make sure we have enough cards
             bank_start_of_round = self.bank
@@ -414,27 +413,17 @@ def step(message):
         input(message)
 
 
-def run_game(game_shoe, game_min_bet, game_estimate_to, game_das,  game_decks, game_shoe_bank_start, data_to_log, count):
-    print("New game starting. ")
-    game = Game(game_shoe,  game_min_bet, game_estimate_to, game_das, game_decks, game_shoe_bank_start, data_to_log, count)
-    game.gameloop()
-    print(f"Game loop completed. The bank is {game.bank}/{game_shoe_bank_start}")
-    profit = game.bank - game_shoe_bank_start
-    return profit, game.data
+def run_game():
+    pass
 
 def run_sim(shoe, min_bet, estimate_to, das, decks, bank_start, rounds, filename=""):
-    print("Beginning sim run")
-    y = [bank_start]
-    step("Curent bank value data:"+str(y))
+    y = [bank]
     current_trial_bank = bank_start
-    step(f"Current trial bank: {current_trial_bank}")
     for i in range(rounds):
-        step("Starting a new round")
         # game: main_character, shoe, min_bet, estimate_to, das, decks
-        profit, new_data = run_game(shoe, min_bet, estimate_to, das, decks, current_trial_bank, [], True)
-        y.extend(new_data)
-        current_trial_bank += profit
-        step(f"Ended new round. Profit: {profit}")
+        main_game = Game(SHOE, MIN_BET, ESTIMATE_TO, DAS, DECKS, current_trial_bank, y)
+        main_game.gameloop()
+        current_trial_bank = main_game.bank
 
     print(current_trial_bank)
     print(current_trial_bank - bank_start)
